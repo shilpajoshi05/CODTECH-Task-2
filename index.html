@@ -1,0 +1,104 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather Forecast</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+  .weather-container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  .weather-icon {
+    width: 50px;
+    height: 50px;
+  }
+  .forecast-item {
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f0f0f0;
+  }
+</style>
+</head>
+<body>
+  <div class="weather-container">
+    <h2>Weather Forecast</h2>
+    <input type="text" id="location" placeholder="Enter city name">
+    <button onclick="fetchWeather()">Get Weather</button>
+    <div id="weather-info"></div>
+    <div id="forecast"></div>
+  </div>
+
+  <script>
+    async function fetchWeather() {
+      const location = document.getElementById('location').value.trim();
+      if (!location) {
+        alert('Please enter a city name');
+        return;
+      }
+      
+      const apiKey = 'your_api_key'; // Replace with your API key
+      const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${location}&appid=${apiKey}&units=metric`;
+
+      try {
+        const [currentData, forecastData] = await Promise.all([
+          fetch(apiUrl).then(response => response.json()),
+          fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${location}&appid=${apiKey}&units=metric`).then(response => response.json())
+        ]);
+
+        if (currentData.cod !== 200 || forecastData.cod !== "200") {
+          throw new Error('City not found or error in fetching data');
+        }
+
+        displayCurrentWeather(currentData);
+        displayForecast(forecastData);
+      } catch (error) {
+        console.error('Error fetching weather data:', error);
+        alert('Failed to fetch weather data. Please try again.');
+      }
+    }
+
+    function displayCurrentWeather(data) {
+      const weatherInfo = document.getElementById('weather-info');
+      weatherInfo.innerHTML = `
+        <h3>${data.name}, ${data.sys.country}</h3>
+        <p>Temperature: ${data.main.temp}°C</p>
+        <p>Description: ${data.weather[0].description}</p>
+        <img class="weather-icon" src="http://openweathermap.org/img/wn/${data.weather[0].icon}.png" alt="Weather Icon">
+      `;
+    }
+
+    function displayForecast(data) {
+      const forecastDiv = document.getElementById('forecast');
+      forecastDiv.innerHTML = `<h3>5-Day Forecast</h3>`;
+
+      const forecastItems = data.list.slice(0, 5); // Displaying next 5 forecasts
+      forecastItems.forEach(item => {
+        const date = new Date(item.dt * 1000); // Convert timestamp to date
+        const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
+        const time = date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+
+        forecastDiv.innerHTML += `
+          <div class="forecast-item">
+            <p>${dayOfWeek} ${time}</p>
+            <p>Temperature: ${item.main.temp}°C</p>
+            <p>Description: ${item.weather[0].description}</p>
+            <img class="weather-icon" src="http://openweathermap.org/img/wn/${item.weather[0].icon}.png" alt="Weather Icon">
+          </div>
+        `;
+      });
+    }
+  </script>
+</body>
+</html>
